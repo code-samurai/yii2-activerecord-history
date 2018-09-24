@@ -7,8 +7,8 @@
 namespace nhkey\arh;
 
 use nhkey\arh\managers\BaseManager;
+use yii\base\Behavior;
 use yii\db\BaseActiveRecord;
-use \yii\base\Behavior;
 
 
 class ActiveRecordHistoryBehavior extends Behavior
@@ -18,17 +18,22 @@ class ActiveRecordHistoryBehavior extends Behavior
      * @var BaseManager This is manager for save history in some storage
      * Default value: DBManager.
      */
-    public $manager ='nhkey\arh\managers\DBManager';
+    public $manager = 'nhkey\arh\managers\DBManager';
 
     /**
-     * @var array This fields don't save in your storage
+     * @var array Array of fields to add to history
      */
-    public $ignoreFields = [];
+    public $fields = [];
 
     /**
      * @var array Events List than saved in storage
      */
-    public $eventsList = [BaseManager::AR_INSERT, BaseManager::AR_UPDATE, BaseManager::AR_DELETE, BaseManager::AR_UPDATE_PK];
+    public $eventsList = [
+        BaseManager::AR_INSERT,
+        BaseManager::AR_UPDATE,
+        BaseManager::AR_DELETE,
+        BaseManager::AR_UPDATE_PK
+    ];
 
     /**
      * @var array options for manager
@@ -39,7 +44,8 @@ class ActiveRecordHistoryBehavior extends Behavior
      * @var array Get Yii2 event name from behavior event name
      * @return array|string
      */
-    public function getEventName($event){
+    public function getEventName($event)
+    {
         $eventNames = [
             BaseManager::AR_INSERT => BaseActiveRecord::EVENT_AFTER_INSERT,
             BaseManager::AR_UPDATE => BaseActiveRecord::EVENT_AFTER_UPDATE,
@@ -54,7 +60,7 @@ class ActiveRecordHistoryBehavior extends Behavior
     public function events()
     {
         $events = [];
-        foreach ($this->eventsList as $event){
+        foreach ($this->eventsList as $event) {
             $events[$this->getEventName($event)] = 'saveHistory';
         }
         return $events;
@@ -69,7 +75,7 @@ class ActiveRecordHistoryBehavior extends Behavior
         $manager = new $this->manager;
         $manager->setOptions($this->managerOptions);
 
-        switch ($event->name){
+        switch ($event->name) {
             case BaseActiveRecord::EVENT_AFTER_INSERT:
                 $type = $manager::AR_INSERT;
                 $manager->setUpdatedFields($event->changedAttributes);
@@ -77,17 +83,22 @@ class ActiveRecordHistoryBehavior extends Behavior
 
             case BaseActiveRecord::EVENT_AFTER_UPDATE:
 
-                if (in_array(BaseManager::AR_UPDATE_PK, $this->eventsList) && ($this->owner->getOldPrimaryKey() != $this->owner->getPrimaryKey()))
+                if (in_array(BaseManager::AR_UPDATE_PK,
+                        $this->eventsList) && ($this->owner->getOldPrimaryKey() != $this->owner->getPrimaryKey())) {
                     $type = $manager::AR_UPDATE_PK;
-                elseif (in_array(BaseManager::AR_UPDATE, $this->eventsList))
+                } elseif (in_array(BaseManager::AR_UPDATE, $this->eventsList)) {
                     $type = $manager::AR_UPDATE;
-                else
+                } else {
                     return true;
+                }
 
                 $changedAttributes = $event->changedAttributes;
-                foreach ($this->ignoreFields as $ignoreField)
-                    if (isset($changedAttributes[$ignoreField]))
-                        unset($changedAttributes[$ignoreField]);
+
+                foreach ($this->fields as $field) {
+                    if (!in_array($field, $changedAttributes)) {
+                        unset($changedAttributes[$field]);
+                    }
+                }
 
                 $manager->setUpdatedFields($changedAttributes);
                 break;
