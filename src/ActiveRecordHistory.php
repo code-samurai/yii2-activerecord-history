@@ -101,11 +101,10 @@ class ActiveRecordHistoryBehavior extends Behavior
 
                 if (count($this->fields) > 0) {
                     foreach ($this->fields as $field) {
-                        if (!in_array($field, $changedAttributes)) {
+                        if (!isset($changedAttributes[$field])) {
                             unset($changedAttributes[$field]);
                         }
                     }
-
                 } else {
                     foreach ($this->ignoreFields as $ignoreField) {
                         if (isset($changedAttributes[$ignoreField])) {
@@ -113,7 +112,7 @@ class ActiveRecordHistoryBehavior extends Behavior
                         }
                     }
                 }
-                
+
 
                 $manager->setUpdatedFields($changedAttributes);
                 break;
@@ -127,6 +126,4 @@ class ActiveRecordHistoryBehavior extends Behavior
         }
         $manager->run($type, $this->owner);
     }
-
-
 }

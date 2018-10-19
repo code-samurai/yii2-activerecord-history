@@ -21,6 +21,11 @@ class ActiveRecordHistoryBehavior extends Behavior
     public $manager = 'nhkey\arh\managers\DBManager';
 
     /**
+     * @var array This fields don't save in your storage
+     */
+    public $ignoreFields = [];
+
+    /**
      * @var array Array of fields to add to history
      */
     public $fields = [];
@@ -94,9 +99,17 @@ class ActiveRecordHistoryBehavior extends Behavior
 
                 $changedAttributes = $event->changedAttributes;
 
-                foreach ($this->fields as $field) {
-                    if (!in_array($field, $changedAttributes)) {
-                        unset($changedAttributes[$field]);
+                if (count($this->fields) > 0) {
+                    foreach ($this->fields as $field) {
+                        if (!isset($changedAttributes[$field])) {
+                            unset($changedAttributes[$field]);
+                        }
+                    }
+                } else {
+                    foreach ($this->ignoreFields as $ignoreField) {
+                        if (isset($changedAttributes[$ignoreField])) {
+                            unset($changedAttributes[$ignoreField]);
+                        }
                     }
                 }
 
@@ -112,6 +125,4 @@ class ActiveRecordHistoryBehavior extends Behavior
         }
         $manager->run($type, $this->owner);
     }
-
-
 }
